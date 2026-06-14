@@ -1,0 +1,17 @@
+[package]
+name = "bevy_elan"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "A simple force-based first-person character controller and FPS look camera for Bevy, built on the Avian physics engine."
+repository = "https://github.com/Sigma-dev/bevy_elan"
+keywords = ["bevy", "gamedev", "fps", "character-controller", "avian"]
+categories = ["game-development"]
+
+[dependencies]
+bevy = "0.18"
+avian3d = "0.6"
+
+[lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"
