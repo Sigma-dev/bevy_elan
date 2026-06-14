@@ -24,8 +24,9 @@ pub struct CharacterController3d {
     pub hover_height: f32,
     /// Horizontal movement strength.
     pub move_speed: f32,
-    /// Jump strength.
-    pub jump_force: f32,
+    /// Upward launch velocity (m/s) applied on jump. Set as a velocity rather
+    /// than a force so jump height doesn't depend on the body's mass.
+    pub jump_velocity: f32,
     /// Multiplier on the velocity-based drag that slows the body down.
     pub drag_multiplier: f32,
     /// Grace period after leaving the ground during which a jump is still allowed.
@@ -42,7 +43,7 @@ impl Default for CharacterController3d {
         Self {
             hover_height: 1.0,
             move_speed: 1.0,
-            jump_force: 1.0,
+            jump_velocity: 5.0,
             drag_multiplier: 1.0,
             coyote_time: 0.1,
             jump_cooldown: 0.5,
@@ -110,8 +111,21 @@ fn handle_grounded(
     }
 }
 
-fn handle_hover(mut controllers: Query<(&CharacterController3d, Forces, &DistanceToGround)>) {
-    for (controller, mut forces, distance_to_ground) in controllers.iter_mut() {
+fn handle_hover(
+    time: Res<Time>,
+    mut controllers: Query<(
+        &CharacterController3d,
+        Forces,
+        &DistanceToGround,
+        Option<&LastJump>,
+    )>,
+) {
+    for (controller, mut forces, distance_to_ground, last_jump) in controllers.iter_mut() {
+        // Suppress the ground spring briefly after a jump so it doesn't cancel
+        // the launch velocity before the body clears hover range.
+        if last_jump.is_some_and(|last_jump| time.elapsed_secs() - last_jump.0 < 0.2) {
+            continue;
+        }
         let distance = distance_to_ground.0;
         if distance >= controller.hover_height {
             continue;
@@ -185,9 +199,9 @@ fn handle_jump(
             continue;
         }
         if keyboard.pressed(KeyCode::Space) {
-            forces.linear_velocity_mut().y = 0.0;
-            let force = Vec3::Y * controller.jump_force * 40.0;
-            forces.apply_force(force);
+            // Set the launch velocity directly: a fixed force would send a light
+            // body flying, since acceleration is force / mass.
+            forces.linear_velocity_mut().y = controller.jump_velocity;
             commands
                 .entity(entity)
                 .insert(LastJump(time.elapsed_secs()));
