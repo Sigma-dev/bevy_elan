@@ -9,8 +9,8 @@ keywords = ["bevy", "gamedev", "fps", "character-controller", "avian"]
 categories = ["game-development"]
 
 [dependencies]
-bevy = "0.18"
-avian3d = "0.6"
+bevy = "0.19"
+avian3d = "0.7"
 
 [lints.clippy]
 too_many_arguments = "allow"

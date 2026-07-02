@@ -12,6 +12,17 @@ impl Plugin for FpsCameraPlugin {
     }
 }
 
+/// Grabs/hides the cursor for an active [`FpsCamera`] **without** the mouse-look
+/// integration. Use this in driven mode, where orientation comes from [`Look`]
+/// rather than [`handle_fps_cameras`], but you still want the cursor captured.
+pub struct CursorGrabPlugin;
+
+impl Plugin for CursorGrabPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, update_cursor);
+    }
+}
+
 /// A first-person look camera. Attach it to a `Camera3d`.
 ///
 /// If the camera is a child of a body entity (e.g. the character controller),
@@ -38,6 +49,42 @@ impl FpsCamera {
 /// unlocked instead of grabbing it.
 #[derive(Component, Debug)]
 pub struct ShowCursor;
+
+/// Explicit look orientation stored on a controller **body**.
+///
+/// This is the driven-mode counterpart to [`handle_fps_cameras`]: instead of the
+/// camera integrating raw mouse motion into transforms every frame, the caller
+/// keeps absolute `yaw`/`pitch` here (e.g. from a networked input) and
+/// [`apply_look`] turns it into the body/camera transforms deterministically. A
+/// body without `Look` is untouched, so default-mode cameras are unaffected.
+#[derive(Component, Default, Debug, Clone, Copy)]
+pub struct Look {
+    /// Yaw about the world Y axis, applied to the body. Also the movement basis.
+    pub yaw: f32,
+    /// Pitch about the local X axis, applied to the child camera (view only).
+    pub pitch: f32,
+}
+
+/// Applies each body's [`Look`] to its own transform (yaw) and to its child
+/// [`FpsCamera`]'s transform (pitch). Runnable in any schedule.
+pub fn apply_look(
+    bodies: Query<(Entity, &Look, &Children)>,
+    is_camera: Query<(), With<FpsCamera>>,
+    mut transforms: Query<&mut Transform>,
+) {
+    for (body, look, children) in &bodies {
+        if let Ok(mut body_transform) = transforms.get_mut(body) {
+            body_transform.rotation = Quat::from_rotation_y(look.yaw);
+        }
+        for &child in children {
+            if is_camera.get(child).is_ok() {
+                if let Ok(mut cam_transform) = transforms.get_mut(child) {
+                    cam_transform.rotation = Quat::from_rotation_x(look.pitch);
+                }
+            }
+        }
+    }
+}
 
 fn update_cursor(
     cameras: Query<(&Camera, Option<&ShowCursor>), With<FpsCamera>>,

@@ -41,7 +41,7 @@ impl Plugin for ElanPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             fps_camera::FpsCameraPlugin,
-            character_controller::CharacterController3dPlugin,
+            character_controller::CharacterController3dPlugin::default(),
         ));
     }
 }
