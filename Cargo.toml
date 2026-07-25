@@ -8,9 +8,15 @@ repository = "https://github.com/Sigma-dev/bevy_elan"
 keywords = ["bevy", "gamedev", "fps", "character-controller", "avian"]
 categories = ["game-development"]
 
+[features]
+# Derive serde on the controller's persistent state (LastGrounded / LastJump)
+# so it can be snapshotted/rolled back by a tick-networking layer.
+serialize = ["dep:serde"]
+
 [dependencies]
 bevy = "0.19"
 avian3d = "0.7"
+serde = { version = "1", features = ["derive"], optional = true }
 
 [lints.clippy]
 too_many_arguments = "allow"

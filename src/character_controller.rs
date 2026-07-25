@@ -190,10 +190,18 @@ impl Default for CharacterController3d {
 #[derive(Component)]
 pub struct Grounded;
 
-#[derive(Component)]
+/// Wall-clock (or tick-clock) time the body was last grounded. Persists while
+/// airborne, so it is snapshotted when the `serialize` feature is on for
+/// deterministic coyote-time under rollback.
+#[derive(Component, Clone, Copy)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 pub struct LastGrounded(pub f32);
 
-#[derive(Component)]
+/// Time of the last jump. Persists across the jump cooldown, so it is
+/// snapshotted when the `serialize` feature is on for deterministic jumps
+/// under rollback.
+#[derive(Component, Clone, Copy)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 pub struct LastJump(pub f32);
 
 #[derive(Component)]
